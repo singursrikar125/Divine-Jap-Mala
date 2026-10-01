@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divine Jap Mala - Sacred Mantra Counter</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            100: '#FFF9E6',
+                            300: '#FFE599',
+                            400: '#F5C542',
+                            500: '#D4AF37',
+                            600: '#AA820A',
+                            800: '#664E06',
+                        },
+                        saffron: {
+                            400: '#FF9933',
+                            500: '#FF7700',
+                            600: '#CC5500',
+                        },
+                        cosmic: {
+                            950: '#07080C',
+                            900: '#0B0C10',
+                            800: '#12141D',
+                            700: '#1F2430',
+                        }
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        poppins: ['Poppins', 'sans-serif'],
+                        rozha: ['Rozha One', 'serif']
+                    },
+                    animation: {
+                        'spin-slow': 'spin 70s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & FontAwesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800;900&family=Poppins:wght@300;400;500;600&family=Rozha+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        .font-cinzel { font-family: 'Cinzel', serif; }
+        .font-rozha { font-family: 'Rozha One', serif; }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.4); border-radius: 3px; }
+
+        .glass-card {
+            background: rgba(18, 20, 29, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        .bead {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .tap-ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.55s ease-out;
+            background-color: rgba(255, 215, 0, 0.3);
+            pointer-events: none;
+            z-index: 40;
+        }
+
+        @keyframes ripple {
+            to {
+                transform: scale(4.5);
+                opacity: 0;
+            }
+        }
+
+        /* CIRCLE ONLY / FOCUS MODE STYLES */
+        body.circle-only-mode header,
+        body.circle-only-mode #leftPanel,
+        body.circle-only-mode #rightPanel,
+        body.circle-only-mode #mantraHeader,
+        body.circle-only-mode #clickPrompt {
+            display: none !important;
+        }
+
+        body.circle-only-mode #centerPanel {
+            width: 100% !important;
+            height: 100vh !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 !important;
+        }
+
+        /* Full Screen Image overlay during Focus Mode */
+        body.circle-only-mode #deityImageContainer {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            border-radius: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            z-index: 0 !important;
+        }
+
+        body.circle-only-mode #deityImgDisplay {
+            filter: brightness(0.7) contrast(1.1) !important;
+        }
+
+        /* Focus Mode floating 'X' exit control */
+        #focusExitControls {
+            display: none;
+        }
+
+        body.circle-only-mode #focusExitControls {
+            display: flex !important;
+        }
+
+        .deity-img-frame {
+            box-shadow: 0 0 35px rgba(212, 175, 55, 0.35), inset 0 0 20px rgba(0, 0, 0, 0.6);
+            transition: all 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body id="mainBody" class="bg-cosmic-950 text-amber-100 min-h-screen flex flex-col justify-between overflow-x-hidden relative transition-colors duration-500">
+
+    <canvas id="particleCanvas"></canvas>
+    <div id="rippleContainer" class="fixed inset-0 pointer-events-none z-30 overflow-hidden"></div>
+
+    <!-- FOCUS MODE FLOATING 'X' EXIT BUTTON (Top Right) -->
+    <div id="focusExitControls" class="fixed top-5 right-5 z-50 pointer-events-auto">
+        <button id="exitFocusModeBtn" class="bg-cosmic-800/80 hover:bg-gold-500 text-amber-100 hover:text-cosmic-950 border border-gold-500/40 w-11 h-11 rounded-full flex items-center justify-center text-base font-bold shadow-2xl backdrop-blur-md transition duration-200" title="Exit Focus Mode">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
+    <!-- Background Mandala Artwork -->
+    <div class="fixed inset-0 flex items-center justify-center pointer-events-none z-0 opacity-15">
+        <div class="w-[340px] h-[340px] sm:w-[650px] sm:h-[650px] lg:w-[820px] lg:h-[820px] rounded-full border border-gold-500/20 flex items-center justify-center animate-spin-slow p-8">
+            <svg viewBox="0 0 200 200" class="w-full h-full text-gold-500 fill-current opacity-25">
+                <path d="M100,10 L105,30 L125,15 L115,35 L135,30 L120,45 L140,50 L120,60 L140,75 L115,75 L130,95 L105,85 L110,105 L95,90 L90,110 L80,90 L70,105 L75,85 L50,95 L65,75 L40,75 L60,60 L40,50 L60,45 L45,30 L65,35 L55,15 L75,30 Z" transform="rotate(0 100 100)"/>
+                <path d="M100,10 L105,30 L125,15 L115,35 L135,30 L120,45 L140,50 L120,60 L140,75 L115,75 L130,95 L105,85 L110,105 L95,90 L90,110 L80,90 L70,105 L75,85 L50,95 L65,75 L40,75 L60,60 L40,50 L60,45 L45,30 L65,35 L55,15 L75,30 Z" transform="rotate(45 100 100)"/>
+                <circle cx="100" cy="100" r="85" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="2,2"/>
+            </svg>
+        </div>
+    </div>
+
+    <header class="relative z-20 w-full px-4 py-3 sm:px-8 flex flex-wrap items-center justify-between gap-3 border-b border-gold-500/20 glass-card">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-saffron-500 to-gold-500 flex items-center justify-center text-cosmic-950 text-xl font-bold shadow-lg shadow-saffron-500/20">
+                ॐ
+            </div>
+            <div>
+                <h1 class="font-cinzel text-lg sm:text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-saffron-400 to-gold-500">
+                    DIVINE JAP MALA
+                </h1>
+                <p class="text-[10px] sm:text-xs text-amber-200/70 tracking-widest uppercase">Sacred Meditation & Chanting Counter</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2 sm:space-x-3 text-xs">
+            <div id="focusModeContainer" class="flex items-center gap-2 py-1.5 px-3 rounded-xl border border-gold-500/30 hover:border-gold-400 bg-cosmic-800/80 text-amber-100 transition select-none shadow-inner cursor-pointer" title="Double click [ ] to show ONLY Mala Circle">
+                <input type="checkbox" id="circleOnlyCheckbox" class="w-4 h-4 accent-gold-500 rounded cursor-pointer pointer-events-none">
+                <span id="circleOnlyLabel" class="font-medium text-xs flex items-center gap-1.5 text-gold-300">
+                    <i class="fa-solid fa-circle-notch text-gold-400"></i>
+                    <span>[ ] Circle Only (Double Click)</span>
+                </span>
+            </div>
+
+            <button id="soundToggleBtn" title="Toggle Audio Sound" class="p-2 sm:px-3 sm:py-1.5 rounded-xl border border-gold-500/30 hover:border-gold-400 bg-cosmic-800/80 text-amber-200 transition flex items-center gap-1.5">
+                <i id="soundIcon" class="fa-solid fa-volume-high text-gold-400"></i>
+            </button>
+
+            <button id="fullscreenBtn" title="Fullscreen Mode" class="p-2 sm:px-3 sm:py-1.5 rounded-xl border border-gold-500/30 hover:border-gold-400 bg-cosmic-800/80 text-amber-200 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-expand text-gold-400"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="relative z-10 flex-grow container mx-auto px-4 py-4 sm:py-6 flex flex-col lg:flex-row items-start justify-between gap-6 max-w-7xl">
+        
+        <section id="leftPanel" class="w-full lg:w-1/4 flex flex-col gap-4 order-2 lg:order-1">
+            <div class="glass-card rounded-2xl p-4 sm:p-5 border border-gold-500/20 shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-cinzel text-xs sm:text-sm font-semibold text-gold-400 flex items-center">
+                        <i class="fa-solid fa-stopwatch mr-2"></i>Chanting Session
+                    </h2>
+                    <span id="sessionStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-red-950/80 text-red-300 border border-red-500/30 font-semibold tracking-wider">
+                        STOPPED
+                    </span>
+                </div>
+
+                <div class="text-center py-2.5 bg-cosmic-800/80 rounded-xl border border-gold-500/10">
+                    <div class="text-[10px] text-amber-300/60 uppercase tracking-widest mb-0.5">Active Session Time</div>
+                    <div id="sessionTimerText" class="font-mono text-2xl sm:text-3xl font-bold text-gold-300 tracking-wider">
+                        00:00:00
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="startSessionBtn" class="flex-1 py-2.5 px-3 rounded-xl font-cinzel text-xs font-bold text-cosmic-950 bg-gradient-to-r from-gold-400 via-gold-300 to-saffron-500 hover:from-gold-300 hover:to-saffron-400 shadow-lg shadow-gold-500/20 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play"></i> START
+                    </button>
+                    <button id="stopSessionBtn" class="flex-1 py-2.5 px-3 rounded-xl font-cinzel text-xs font-bold text-amber-100 bg-cosmic-800 border border-amber-500/30 hover:border-amber-400 transition flex items-center justify-center gap-2 opacity-50 cursor-not-allowed" disabled>
+                        <i class="fa-solid fa-square"></i> STOP
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-gold-500/10 text-xs text-amber-200/80">
+                    <div class="bg-cosmic-800/40 p-2 rounded-lg text-center border border-gold-500/10">
+                        <span class="text-[10px] text-amber-300/60 block">Speed</span>
+                        <span id="speedBpmText" class="font-mono font-bold text-gold-400">0 bpm</span>
+                    </div>
+                    <div class="bg-cosmic-800/40 p-2 rounded-lg text-center border border-gold-500/10">
+                        <span class="text-[10px] text-amber-300/60 block">Avg Time/Mala</span>
+                        <span id="avgTimeMalaText" class="font-mono font-bold text-gold-400">00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4 sm:p-5 border border-gold-500/20 shadow-xl space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-cinzel text-xs sm:text-sm font-semibold text-gold-400 flex items-center">
+                        <i class="fa-solid fa-image mr-2"></i>God Image Background
+                    </h3>
+                    <button id="removeDeityImgBtn" class="text-[10px] text-red-400 hover:text-red-300 underline font-semibold hidden">Remove</button>
+                </div>
+                <div>
+                    <label class="block text-[11px] text-amber-200/70 mb-1">Select God Picture from Phone Folder:</label>
+                    <input type="file" id="deityFileInput" accept="image/*" class="w-full text-xs text-amber-200 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gold-500/20 file:text-gold-300 hover:file:bg-gold-500/30 cursor-pointer">
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4 sm:p-5 border border-gold-500/20 shadow-xl space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-cinzel text-xs sm:text-sm font-semibold text-gold-400 flex items-center">
+                        <i class="fa-solid fa-bullseye mr-2"></i>Custom Target Goal
+                    </h3>
+                    <span class="text-xs text-amber-300/80 font-mono font-semibold" id="targetMalasBadge">100 Malas</span>
+                </div>
+
+                <div class="grid grid-cols-4 gap-1.5 text-xs font-cinzel">
+                    <button data-target="1" class="target-preset-btn py-1.5 rounded-lg border border-gold-500/20 bg-cosmic-800 hover:border-gold-400 text-amber-200">1</button>
+                    <button data-target="11" class="target-preset-btn py-1.5 rounded-lg border border-gold-500/20 bg-cosmic-800 hover:border-gold-400 text-amber-200">11</button>
+                    <button data-target="108" class="target-preset-btn py-1.5 rounded-lg border border-gold-500/20 bg-cosmic-800 hover:border-gold-400 text-amber-200">108</button>
+                    <button data-target="1000" class="target-preset-btn py-1.5 rounded-lg border border-gold-500/20 bg-cosmic-800 hover:border-gold-400 text-amber-200">1K</button>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] text-amber-200/70 mb-1">Set Any Custom Target Malas:</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="customTargetInput" min="1" max="1000000" placeholder="e.g. 21, 50, 1000" class="w-full px-3 py-1.5 bg-cosmic-800 border border-gold-500/30 rounded-xl text-xs text-amber-100 focus:outline-none focus:border-gold-400 font-mono">
+                        <button id="applyTargetBtn" class="px-3 py-1.5 bg-gold-500/20 hover:bg-gold-500/30 border border-gold-400 rounded-xl text-xs font-cinzel font-semibold text-gold-300">Set</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4 border border-gold-500/20 shadow-xl space-y-3">
+                <h3 class="font-cinzel text-xs font-semibold text-gold-400 flex items-center justify-between">
+                    <span><i class="fa-solid fa-om mr-1.5"></i>Select / Add Mantra</span>
+                    <span id="deityIcon" class="text-base">🕉️</span>
+                </h3>
+
+                <div class="space-y-1.5 max-h-[130px] overflow-y-auto pr-1" id="mantraList"></div>
+
+                <div class="pt-2 border-t border-gold-500/10 space-y-2">
+                    <span class="text-[11px] font-semibold text-saffron-400 block">Add Your Custom Mantra:</span>
+                    <input type="text" id="customMantraTitle" placeholder="God Name / Title (e.g. SHRI RAM)" class="w-full px-2.5 py-1 bg-cosmic-800 border border-gold-500/30 rounded-lg text-xs text-amber-100 focus:outline-none focus:border-gold-400">
+                    <input type="text" id="customMantraText" placeholder="Mantra Text (e.g. Om Ram Ramaya Namaha)" class="w-full px-2.5 py-1 bg-cosmic-800 border border-gold-500/30 rounded-lg text-xs text-amber-100 focus:outline-none focus:border-gold-400">
+                    <button id="addCustomMantraBtn" class="w-full py-1.5 bg-gradient-to-r from-saffron-500 to-gold-400 hover:from-saffron-400 hover:to-gold-300 text-cosmic-950 font-cinzel text-xs font-bold rounded-lg transition shadow-md">
+                        + Add Custom Mantra
+                    </button>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="centerPanel" class="w-full lg:w-2/4 flex flex-col items-center justify-center relative my-2 lg:my-0 order-1 lg:order-2 select-none">
+            <div id="mantraHeader" class="text-center mb-2 sm:mb-4 px-4 transition-all duration-500">
+                <span id="deitySubTitle" class="text-xs uppercase tracking-widest text-saffron-400 font-semibold block mb-1">LORD SHIVA</span>
+                <h2 id="currentMantraDisplay" class="font-rozha text-2xl sm:text-3xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-gold-100 via-gold-300 to-saffron-400 drop-shadow-md">
+                    Om Namah Shivaya
+                </h2>
+                <p id="mantraMeaning" class="text-xs text-amber-200/60 mt-1 italic max-w-md mx-auto">"I bow to Lord Shiva, the auspicious supreme consciousness."</p>
+            </div>
+
+            <div class="relative w-[310px] h-[310px] sm:w-[420px] sm:h-[420px] md:w-[470px] md:h-[470px] flex items-center justify-center">
+                
+                <div id="deityImageContainer" class="absolute w-[280px] h-[280px] sm:w-[370px] sm:h-[370px] md:w-[410px] md:h-[410px] rounded-full overflow-hidden border-2 border-gold-500/40 deity-img-frame flex items-center justify-center bg-cosmic-900/60 z-0 pointer-events-none transition-all duration-500">
+                    <img id="deityImgDisplay" src="" alt="Divine God Portrait" class="w-full h-full object-cover object-center hidden filter brightness-90 contrast-105">
+                    <div id="deityImgPlaceholder" class="flex flex-col items-center justify-center text-gold-500/30 space-y-1">
+                        <i class="fa-solid fa-om text-5xl sm:text-7xl"></i>
+                    </div>
+                </div>
+
+                <svg id="malaSvg" viewBox="0 0 500 500" class="w-full h-full transform transition-transform duration-500 ease-out z-10 relative">
+                    <circle cx="250" cy="250" r="195" fill="none" stroke="rgba(212, 175, 55, 0.25)" stroke-width="2" stroke-dasharray="4 2"/>
+                    <g id="beadsGroup"></g>
+                    
+                    <g id="guruTassel" transform="translate(250, 42)">
+                        <circle cx="0" cy="0" r="16" fill="url(#guruGradient)" stroke="#FFD700" stroke-width="2" class="drop-shadow-lg"/>
+                        <path d="M-10,-8 Q0,-16 10,-8 L8,0 L-8,0 Z" fill="#D4AF37"/>
+                        <path d="M-8,14 L-14,40 M-4,15 L-6,42 M0,16 L0,45 M4,15 L6,42 M8,14 L14,40" stroke="#FF7700" stroke-width="2.5" stroke-linecap="round"/>
+                        <circle cx="0" cy="0" r="6" fill="#FFF9E6" opacity="0.6"/>
+                    </g>
+
+                    <defs>
+                        <radialGradient id="guruGradient" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stop-color="#FFF9E6"/>
+                            <stop offset="40%" stop-color="#FF9933"/>
+                            <stop offset="100%" stop-color="#AA820A"/>
+                        </radialGradient>
+                        <radialGradient id="rudrakshaGradient" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#D48C46"/>
+                            <stop offset="60%" stop-color="#8B4513"/>
+                            <stop offset="100%" stop-color="#3D1E0B"/>
+                        </radialGradient>
+                        <radialGradient id="activeBeadGradient" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#FFFFFF"/>
+                            <stop offset="30%" stop-color="#FFE599"/>
+                            <stop offset="100%" stop-color="#FF7700"/>
+                        </radialGradient>
+                    </defs>
+                </svg>
+
+                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
+                    <div class="w-36 h-36 sm:w-48 sm:h-48 rounded-full glass-card border border-gold-500/40 flex flex-col items-center justify-center p-3 text-center shadow-2xl relative overflow-hidden backdrop-blur-md">
+                        <div id="centerGlow" class="absolute inset-0 bg-gold-500/10 rounded-full blur-xl transition-all duration-300 opacity-50"></div>
+                        <div class="text-[9px] sm:text-[11px] text-amber-300/80 font-cinzel font-semibold uppercase tracking-widest">CURRENT BEAD</div>
+                        <div id="beadCountText" class="font-cinzel text-3xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-gold-100 to-gold-400 my-0.5 min-h-[2.5rem] flex items-center justify-center">
+                            0
+                        </div>
+                        <div class="text-[10px] text-amber-200/60 font-medium">/ 108</div>
+                        <div class="mt-1.5 px-2.5 py-0.5 rounded-full bg-gold-500/20 border border-gold-500/40 text-[10px] sm:text-xs text-saffron-300 font-semibold tracking-wide">
+                            MALA <span id="currentMalaText">0</span> / <span id="targetMalaDisplay">100</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="clickPrompt" class="mt-3 text-center">
+                <span class="inline-flex items-center gap-2 text-xs text-amber-200/70 bg-cosmic-800/80 px-3 py-1.5 rounded-full border border-gold-500/20">
+                    <i class="fa-solid fa-hand-pointer text-gold-400 animate-bounce"></i>
+                    <span>Click anywhere on the screen or press <kbd class="px-1.5 py-0.5 bg-cosmic-950 border border-gold-500/30 rounded text-gold-300 font-mono">SPACE</kbd> to count</span>
+                </span>
+            </div>
+        </section>
+
+        <section id="rightPanel" class="w-full lg:w-1/4 flex flex-col gap-4 order-3">
+            <div class="glass-card rounded-2xl p-5 border border-gold-500/20 shadow-xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-cinzel text-sm font-semibold text-gold-400">
+                        <i class="fa-solid fa-chart-line mr-2"></i>Goal Progress
+                    </h3>
+                    <span id="goalPercent" class="font-cinzel text-xs font-bold text-saffron-400">0.0%</span>
+                </div>
+
+                <div>
+                    <div class="w-full h-3 bg-cosmic-800 rounded-full overflow-hidden p-0.5 border border-gold-500/20">
+                        <div id="goalProgressBar" class="h-full bg-gradient-to-r from-saffron-500 via-gold-400 to-gold-300 rounded-full transition-all duration-500 w-0 shadow-lg shadow-gold-500/30"></div>
+                    </div>
+                    <div class="flex justify-between text-[11px] text-amber-200/60 mt-1.5 font-mono">
+                        <span id="totalChantsText">0 / 10,800</span>
+                        <span>Total Chants</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-gold-500/10">
+                    <div class="bg-cosmic-800/40 p-2.5 rounded-xl border border-gold-500/10 text-center">
+                        <span class="text-[10px] text-amber-300/60 uppercase block">Completed Malas</span>
+                        <span id="statCompletedMalas" class="font-cinzel text-lg font-bold text-gold-300">0</span>
+                    </div>
+                    <div class="bg-cosmic-800/40 p-2.5 rounded-xl border border-gold-500/10 text-center">
+                        <span class="text-[10px] text-amber-300/60 uppercase block">Remaining Malas</span>
+                        <span id="statRemainingMalas" class="font-cinzel text-lg font-bold text-gold-300">100</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4 border border-gold-500/20 shadow-xl flex flex-col gap-2">
+                <button id="resetMalaBtn" class="w-full py-2 px-3 rounded-xl border border-amber-500/30 hover:border-amber-400 text-amber-200 hover:text-gold-300 bg-cosmic-800/60 transition text-xs flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-rotate-left"></i> Reset Current Mala
+                </button>
+                <button id="resetAllBtn" class="w-full py-2 px-3 rounded-xl border border-red-500/30 hover:border-red-400 text-red-300 hover:bg-red-950/30 transition text-xs flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-trash-can"></i> Reset All Counters
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="milestoneModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-card max-w-md w-full rounded-3xl p-8 border border-gold-500/50 shadow-2xl text-center space-y-5 animate-float relative overflow-hidden">
+            <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-saffron-500 to-gold-300 flex items-center justify-center text-cosmic-950 text-4xl shadow-xl shadow-gold-500/30">
+                🪷
+            </div>
+
+            <div class="space-y-2">
+                <span class="text-xs uppercase tracking-widest text-saffron-400 font-bold">SACRED ACCOMPLISHMENT</span>
+                <h3 class="font-cinzel text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-gold-100 via-gold-300 to-saffron-400">
+                    TARGET MALAS COMPLETED!
+                </h3>
+                <p class="text-xs text-amber-200/80 leading-relaxed">
+                    You have successfully offered all target chants to the divine. May your heart be filled with inner peace and supreme wisdom.
+                </p>
+            </div>
+
+            <button id="closeMilestoneBtn" class="w-full py-3 rounded-2xl font-cinzel text-xs font-bold text-cosmic-950 bg-gradient-to-r from-gold-400 via-saffron-400 to-gold-300 hover:opacity-90 shadow-xl">
+                CONTINUE DEVOTION 🙏
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let mantraPresets = [
+            { id: 'shiva', deity: 'LORD SHIVA', icon: '🔱', mantra: 'Om Namah Shivaya', meaning: '"I bow to Lord Shiva, the auspicious supreme consciousness."' },
+            { id: 'ram', deity: 'LORD SHRI RAM', icon: '🏹', mantra: 'Shri Ram Jai Ram Jai Jai Ram', meaning: '"Glory to Lord Ram, the embodiment of righteousness."' },
+            { id: 'krishna', deity: 'LORD KRISHNA', icon: '🪶', mantra: 'Hare Krishna Hare Krishna Krishna Krishna Hare Hare', meaning: '"O divine energy, please engage me in your transcendental loving service."' },
+            { id: 'durga', deity: 'GODDESS DURGA', icon: '🔱', mantra: 'Om Dum Durgayei Namaha', meaning: '"I bow to the Divine Mother who protects from all negativities."' },
+            { id: 'gayatri', deity: 'GAYATRI MANTRA', icon: '☀️', mantra: 'Om Bhur Bhuva Swaha Tat Savitur Varenyam', meaning: '"May the Supreme Divine Light illuminate our intellect and minds."' },
+            { id: 'om', deity: 'UNIVERSAL OM', icon: '🕉️', mantra: 'Om Shanti Shanti Shanti', meaning: '"Om, Peace in body, Peace in mind, Peace in spirit."' }
+        ];
+
+        let appState = {
+            currentBead: 0,
+            completedMalas: 0,
+            totalChants: 0,
+            targetMalas: 100,
+            activeMantraId: 'shiva',
+            soundEnabled: true,
+            circleOnlyActive: false,
+            sessionActive: false,
+            sessionSeconds: 0,
+            deityImageUrl: ''
+        };
+
+        let sessionTimer = null;
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playBeadSound() {
+            if (!appState.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(340, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(90, ctx.currentTime + 0.04);
+
+                gain.gain.setValueAtTime(0.35, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start();
+                osc.stop(ctx.currentTime + 0.04);
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+
+        function playChimeSound() {
+            if (!appState.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                const freqs = [432, 864, 1296];
+
+                freqs.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now);
+
+                    gain.gain.setValueAtTime(0.4 / (idx + 1), now);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.0);
+
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + 3.0);
+                });
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+
+        function triggerHaptic() {
+            if ('vibrate' in navigator) navigator.vibrate(20);
+        }
+
+        function createRipple(e) {
+            const container = document.getElementById('rippleContainer');
+            const ripple = document.createElement('div');
+            ripple.className = 'tap-ripple';
+
+            const x = e ? (e.clientX || window.innerWidth / 2) : window.innerWidth / 2;
+            const y = e ? (e.clientY || window.innerHeight / 2) : window.innerHeight / 2;
+            const size = 110;
+
+            ripple.style.width = ripple.style.height = `${size}px`;
+            ripple.style.left = `${x - size / 2}px`;
+            ripple.style.top = `${y - size / 2}px`;
+
+            container.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 550);
+        }
+
+        function initMalaBeads() {
+            const group = document.getElementById('beadsGroup');
+            group.innerHTML = '';
+
+            const cx = 250, cy = 250, radius = 195, totalBeads = 108;
+
+            for (let i = 0; i < totalBeads; i++) {
+                const angle = ((i / totalBeads) * 2 * Math.PI) - (Math.PI / 2);
+                const x = cx + radius * Math.cos(angle);
+                const y = cy + radius * Math.sin(angle);
+
+                const bead = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                bead.setAttribute("cx", x);
+                bead.setAttribute("cy", y);
+                bead.setAttribute("r", "5.5");
+                bead.setAttribute("id", `bead-${i}`);
+                bead.setAttribute("class", "bead fill-amber-800/80 stroke-amber-600/40 stroke-1");
+
+                group.appendChild(bead);
+            }
+        }
+
+        function updateMalaBeadsUI() {
+            const current = appState.currentBead;
+
+            for (let i = 0; i < 108; i++) {
+                const bead = document.getElementById(`bead-${i}`);
+                if (!bead) continue;
+
+                if (i < current) {
+                    bead.setAttribute("fill", "url(#activeBeadGradient)");
+                    bead.setAttribute("stroke", "#FFD700");
+                    bead.setAttribute("stroke-width", "1.5");
+                    bead.setAttribute("r", "7");
+                    bead.style.filter = "drop-shadow(0 0 6px rgba(255, 215, 0, 0.8))";
+                } else if (i === current && current < 108) {
+                    bead.setAttribute("fill", "#FFFFFF");
+                    bead.setAttribute("stroke", "#FF9933");
+                    bead.setAttribute("stroke-width", "2");
+                    bead.setAttribute("r", "8.5");
+                    bead.style.filter = "drop-shadow(0 0 10px rgba(255, 119, 0, 0.9))";
+                } else {
+                    bead.setAttribute("fill", "url(#rudrakshaGradient)");
+                    bead.setAttribute("stroke", "rgba(212, 175, 55, 0.3)");
+                    bead.setAttribute("stroke-width", "1");
+                    bead.setAttribute("r", "5.5");
+                    bead.style.filter = "none";
+                }
+            }
+
+            const malaSvg = document.getElementById('malaSvg');
+            malaSvg.style.transform = `rotate(${(current / 108) * 360}deg)`;
+        }
+
+        function incrementCount(e) {
+            getAudioContext();
+
+            if (!appState.sessionActive) {
+                const startBtn = document.getElementById('startSessionBtn');
+                if (startBtn) {
+                    startBtn.classList.add('ring-4', 'ring-gold-400');
+                    setTimeout(() => startBtn.classList.remove('ring-4', 'ring-gold-400'), 500);
+                }
+                return;
+            }
+
+            appState.currentBead++;
+            appState.totalChants++;
+
+            playBeadSound();
+            triggerHaptic();
+            createRipple(e);
+
+            if (appState.currentBead >= 108) {
+                appState.currentBead = 0;
+                appState.completedMalas++;
+                playChimeSound();
+
+                if (appState.completedMalas >= appState.targetMalas) {
+                    document.getElementById('milestoneModal').classList.remove('hidden');
+                }
+            }
+
+            saveState();
+            renderUI();
+        }
+
+        function startSession() {
+            if (appState.sessionActive) return;
+            appState.sessionActive = true;
+
+            document.getElementById('sessionStatusBadge').textContent = 'ACTIVE';
+            document.getElementById('sessionStatusBadge').className = 'text-[10px] px-2 py-0.5 rounded-full bg-gold-500/20 text-gold-300 border border-gold-400 font-semibold tracking-wider';
+
+            document.getElementById('startSessionBtn').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('stopSessionBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('startSessionBtn').disabled = true;
+            document.getElementById('stopSessionBtn').disabled = false;
+
+            sessionTimer = setInterval(() => {
+                appState.sessionSeconds++;
+                updateSessionTimerDisplay();
+            }, 1000);
+        }
+
+        function stopSession() {
+            if (!appState.sessionActive) return;
+            appState.sessionActive = false;
+
+            clearInterval(sessionTimer);
+            sessionTimer = null;
+
+            document.getElementById('sessionStatusBadge').textContent = 'STOPPED';
+            document.getElementById('sessionStatusBadge').className = 'text-[10px] px-2 py-0.5 rounded-full bg-red-950/80 text-red-300 border border-red-500/30 font-semibold tracking-wider';
+
+            document.getElementById('startSessionBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('stopSessionBtn').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('startSessionBtn').disabled = false;
+            document.getElementById('stopSessionBtn').disabled = true;
+        }
+
+        function updateSessionTimerDisplay() {
+            const hrs = Math.floor(appState.sessionSeconds / 3600).toString().padStart(2, '0');
+            const mins = Math.floor((appState.sessionSeconds % 3600) / 60).toString().padStart(2, '0');
+            const secs = (appState.sessionSeconds % 60).toString().padStart(2, '0');
+            
+            document.getElementById('sessionTimerText').textContent = `${hrs}:${mins}:${secs}`;
+
+            const minutes = appState.sessionSeconds / 60;
+            const bpm = minutes > 0 ? Math.round(appState.totalChants / minutes) : 0;
+            document.getElementById('speedBpmText').textContent = `${bpm} bpm`;
+
+            const avgMalaSecs = appState.completedMalas > 0 ? Math.round(appState.sessionSeconds / appState.completedMalas) : 0;
+            const avgMins = Math.floor(avgMalaSecs / 60).toString().padStart(2, '0');
+            const avgSecs = (avgMalaSecs % 60).toString().padStart(2, '0');
+            document.getElementById('avgTimeMalaText').textContent = `${avgMins}:${avgSecs}`;
+        }
+
+        function setDeityImage(url) {
+            appState.deityImageUrl = url;
+            const imgEl = document.getElementById('deityImgDisplay');
+            const placeholderEl = document.getElementById('deityImgPlaceholder');
+            const removeBtn = document.getElementById('removeDeityImgBtn');
+
+            if (url) {
+                imgEl.src = url;
+                imgEl.classList.remove('hidden');
+                placeholderEl.classList.add('hidden');
+                removeBtn.classList.remove('hidden');
+            } else {
+                imgEl.src = '';
+                imgEl.classList.add('hidden');
+                placeholderEl.classList.remove('hidden');
+                removeBtn.classList.add('hidden');
+            }
+            saveState();
+        }
+
+        function toggleCircleOnlyMode(forceState) {
+            if (typeof forceState === 'boolean') {
+                appState.circleOnlyActive = forceState;
+            } else {
+                appState.circleOnlyActive = !appState.circleOnlyActive;
+            }
+
+            document.getElementById('mainBody').classList.toggle('circle-only-mode', appState.circleOnlyActive);
+            document.getElementById('circleOnlyCheckbox').checked = appState.circleOnlyActive;
+        }
+
+        function renderMantraList() {
+            const list = document.getElementById('mantraList');
+            list.innerHTML = '';
+
+            mantraPresets.forEach(m => {
+                const isActive = m.id === appState.activeMantraId;
+                const item = document.createElement('div');
+                item.className = `p-2 rounded-xl border transition cursor-pointer flex items-center justify-between text-xs ${
+                    isActive ? 'bg-gold-500/20 border-gold-400 text-amber-100 font-semibold' : 'bg-cosmic-800/50 border-gold-500/10 text-amber-200/70 hover:bg-cosmic-800'
+                }`;
+
+                item.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span>${m.icon}</span>
+                        <span class="truncate">${m.mantra}</span>
+                    </div>
+                `;
+
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectMantra(m.id);
+                });
+                list.appendChild(item);
+            });
+        }
+
+        function selectMantra(id) {
+            appState.activeMantraId = id;
+            const m = mantraPresets.find(p => p.id === id) || mantraPresets[0];
+
+            document.getElementById('deitySubTitle').textContent = m.deity;
+            document.getElementById('currentMantraDisplay').textContent = m.mantra;
+            document.getElementById('mantraMeaning').textContent = m.meaning;
+            document.getElementById('deityIcon').textContent = m.icon;
+
+            saveState();
+            renderMantraList();
+        }
+
+        function addCustomMantra() {
+            const titleInput = document.getElementById('customMantraTitle');
+            const textInput = document.getElementById('customMantraText');
+
+            const title = titleInput.value.trim() || 'CUSTOM DEVOTION';
+            const mantra = textInput.value.trim();
+
+            if (!mantra) {
+                alert('Please enter a mantra text.');
+                return;
+            }
+
+            const newId = 'custom_' + Date.now();
+            const newMantraObj = {
+                id: newId,
+                deity: title.toUpperCase(),
+                icon: '✨',
+                mantra: mantra,
+                meaning: '"Custom user chanted mantra offering."'
+            };
+
+            mantraPresets.push(newMantraObj);
+            titleInput.value = '';
+            textInput.value = '';
+
+            selectMantra(newId);
+            saveState();
+        }
+
+        function renderUI() {
+            document.getElementById('beadCountText').textContent = appState.currentBead;
+            document.getElementById('currentMalaText').textContent = appState.completedMalas;
+            document.getElementById('targetMalaDisplay').textContent = appState.targetMalas.toLocaleString();
+            document.getElementById('targetMalasBadge').textContent = `${appState.targetMalas.toLocaleString()} Malas`;
+
+            const targetTotalChants = appState.targetMalas * 108;
+            const percent = ((appState.completedMalas / appState.targetMalas) * 100).toFixed(1);
+
+            document.getElementById('goalPercent').textContent = `${percent}%`;
+            document.getElementById('goalProgressBar').style.width = `${Math.min(percent, 100)}%`;
+
+            document.getElementById('totalChantsText').textContent = `${appState.totalChants.toLocaleString()} / ${targetTotalChants.toLocaleString()}`;
+            document.getElementById('statCompletedMalas').textContent = appState.completedMalas.toLocaleString();
+            document.getElementById('statRemainingMalas').textContent = Math.max(0, appState.targetMalas - appState.completedMalas).toLocaleString();
+
+            updateMalaBeadsUI();
+            updateSessionTimerDisplay();
+        }
+
+        function saveState() {
+            localStorage.setItem('divine_jap_mala_state_v3', JSON.stringify({
+                currentBead: appState.currentBead,
+                completedMalas: appState.completedMalas,
+                totalChants: appState.totalChants,
+                targetMalas: appState.targetMalas,
+                activeMantraId: appState.activeMantraId,
+                soundEnabled: appState.soundEnabled,
+                sessionSeconds: appState.sessionSeconds,
+                deityImageUrl: appState.deityImageUrl,
+                customMantras: mantraPresets.filter(p => p.id.startsWith('custom_'))
+            }));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('divine_jap_mala_state_v3');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    appState.currentBead = parsed.currentBead || 0;
+                    appState.completedMalas = parsed.completedMalas || 0;
+                    appState.totalChants = parsed.totalChants || 0;
+                    appState.targetMalas = parsed.targetMalas || 100;
+                    appState.activeMantraId = parsed.activeMantraId || 'shiva';
+                    appState.soundEnabled = parsed.soundEnabled ?? true;
+                    appState.sessionSeconds = parsed.sessionSeconds || 0;
+                    appState.deityImageUrl = parsed.deityImageUrl || '';
+
+                    if (parsed.customMantras && Array.isArray(parsed.customMantras)) {
+                        mantraPresets = [...mantraPresets, ...parsed.customMantras];
+                    }
+                } catch (e) { console.warn(e); }
+            }
+        }
+
+        function initParticleCanvas() {
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const particles = Array.from({ length: 30 }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 2 + 0.5,
+                alpha: Math.random() * 0.35 + 0.1,
+                vx: (Math.random() - 0.5) * 0.15,
+                vy: -Math.random() * 0.25 - 0.05
+            }));
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.y < 0) p.y = canvas.height;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(212, 175, 55, ${p.alpha})`;
+                    ctx.fill();
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        window.onload = function() {
+            loadState();
+            initMalaBeads();
+            renderMantraList();
+            selectMantra(appState.activeMantraId);
+            setDeityImage(appState.deityImageUrl);
+            initParticleCanvas();
+            renderUI();
+
+            document.body.addEventListener('click', (e) => {
+                if (!e.target.closest('button') && !e.target.closest('input') && !e.target.closest('#focusModeContainer') && !e.target.closest('#mantraList') && !e.target.closest('#focusExitControls')) {
+                    incrementCount(e);
+                }
+            });
+
+            document.body.addEventListener('dblclick', (e) => {
+                if (appState.circleOnlyActive && !e.target.closest('#focusModeContainer')) {
+                    toggleCircleOnlyMode(false);
+                }
+            });
+
+            document.getElementById('exitFocusModeBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleCircleOnlyMode(false);
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (['Space', 'Enter'].includes(e.code) && document.activeElement.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    incrementCount();
+                }
+                if (e.code === 'Escape' && appState.circleOnlyActive) {
+                    toggleCircleOnlyMode(false);
+                }
+            });
+
+            document.getElementById('focusModeContainer').addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                toggleCircleOnlyMode();
+            });
+
+            document.getElementById('deityFileInput').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        setDeityImage(event.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            document.getElementById('removeDeityImgBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                setDeityImage('');
+            });
+
+            document.getElementById('addCustomMantraBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                addCustomMantra();
+            });
+
+            document.getElementById('startSessionBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                startSession();
+            });
+            document.getElementById('stopSessionBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                stopSession();
+            });
+
+            document.querySelectorAll('.target-preset-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const val = parseInt(btn.getAttribute('data-target'));
+                    appState.targetMalas = val;
+                    saveState();
+                    renderUI();
+                });
+            });
+
+            document.getElementById('applyTargetBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const val = parseInt(document.getElementById('customTargetInput').value);
+                if (val && val > 0) {
+                    appState.targetMalas = val;
+                    saveState();
+                    renderUI();
+                }
+            });
+
+            document.getElementById('soundToggleBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                appState.soundEnabled = !appState.soundEnabled;
+                document.getElementById('soundIcon').className = appState.soundEnabled ? 'fa-solid fa-volume-high text-gold-400' : 'fa-solid fa-volume-xmark text-red-400';
+                saveState();
+            });
+
+            document.getElementById('fullscreenBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => console.warn(err));
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+
+            document.getElementById('resetMalaBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                appState.currentBead = 0;
+                saveState();
+                renderUI();
+            });
+
+            document.getElementById('resetAllBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm("Reset all completed Malas, chant counts, and session timer?")) {
+                    appState.currentBead = 0;
+                    appState.completedMalas = 0;
+                    appState.totalChants = 0;
+                    appState.sessionSeconds = 0;
+                    stopSession();
+                    saveState();
+                    renderUI();
+                }
+            });
+
+            document.getElementById('closeMilestoneBtn').addEventListener('click', () => {
+                document.getElementById('milestoneModal').classList.add('hidden');
+            });
+        };
+    </script>
+</body>
+</html>
